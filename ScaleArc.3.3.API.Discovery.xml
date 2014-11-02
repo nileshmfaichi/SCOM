@@ -1,0 +1,913 @@
+<ManagementPack ContentReadable="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity>
+      <ID>ScaleArc.3.3.API.Discovery</ID>
+      <Version>1.0.0.116</Version>
+    </Identity>
+    <Name>ScaleArc.3.3.API.Discovery</Name>
+    <References>
+      <Reference Alias="SC">
+        <ID>Microsoft.SystemCenter.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Windows">
+        <ID>Microsoft.Windows.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Health">
+        <ID>System.Health.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="System">
+        <ID>System.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <EntityTypes>
+      <ClassTypes>
+        <ClassType ID="ScaleArc.3.3.API.Clusters.Dynamic.Class" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false">
+          <Property ID="Component_Name" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="URL" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="IPAddress" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="ClusterID" Type="string" Key="true" CaseSensitive="false" Length="256" MinLength="0" />
+        </ClassType>
+        <ClassType ID="ScaleArc.3.3.API.License.Dynamic.Class" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false">
+          <Property ID="URL" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="IPAddress" Type="string" Key="true" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="APIKey" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="LicenseType" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+        </ClassType>
+        <ClassType ID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false">
+          <Property ID="URL" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="IPAddress" Type="string" Key="true" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="APIKey" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="LicenseType" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+        </ClassType>
+        <ClassType ID="ScaleArc.3.3.API.ServerType.Dynamic.Class" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false">
+          <Property ID="Component_Name" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="URL" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="IPAddress" Type="string" Key="true" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="RunningAs" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="APIKey" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+        </ClassType>
+        <ClassType ID="ScaleArc.3.3.API.Systems.Dynamic.Class" Accessibility="Public" Abstract="false" Base="Windows!Microsoft.Windows.LocalApplication" Hosted="true" Singleton="false">
+          <Property ID="Component_Name" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="URL" Type="string" Key="false" CaseSensitive="false" Length="256" MinLength="0" />
+          <Property ID="IPAddress" Type="string" Key="true" CaseSensitive="false" Length="256" MinLength="0" />
+        </ClassType>
+      </ClassTypes>
+    </EntityTypes>
+    <SecureReferences>
+      <SecureReference ID="ScaleArc.3.3.API.Discovery.IPScan.API.Generate.Account" Accessibility="Public" Context="SC!Microsoft.SystemCenter.ManagementServer" />
+      <SecureReference ID="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account" Accessibility="Public" Context="SC!Microsoft.SystemCenter.ManagementServer" />
+    </SecureReferences>
+    <ModuleTypes>
+      <DataSourceModuleType ID="ScaleArc.3.3.API.Discovery.Server.Availability.DataSource" Accessibility="Internal" Batching="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="Interval" type="xsd:integer" />
+          <xsd:element minOccurs="1" name="IPAddress" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="Interval" Selector="$Config/Interval$" ParameterType="int" />
+          <OverrideableParameter ID="IPAdress" Selector="$Config/IPAddress$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <DataSource ID="Scheduler" TypeID="System!System.Scheduler">
+                <Scheduler>
+                  <SimpleReccuringSchedule>
+                    <Interval Unit="Minutes">$Config/Interval$</Interval>
+                  </SimpleReccuringSchedule>
+                  <ExcludeDates />
+                </Scheduler>
+              </DataSource>
+              <ProbeAction ID="PS" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.Probe">
+                <IPAddress>$Config/IPAddress$</IPAddress>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="PS">
+                <Node ID="Scheduler" />
+              </Node>
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+      </DataSourceModuleType>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Discovery.Server.Availability.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="IPAddress" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IPAddress" Selector="$Config/IPAddress$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="PSProbe" TypeID="Windows!Microsoft.Windows.PowerShellPropertyBagTriggerOnlyProbe">
+                <ScriptName>AvailablityCheck.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+param($IPAddress)
+$api = new-object -comObject 'MOM.ScriptAPI'
+$bag = $api.CreatePropertyBag()
+$test = Test-Connection $IPAddress
+if($test.StatusCode -match "0")
+{
+$Trigger = "OFF"
+}
+else
+{
+$Trigger = "ON"
+}
+$bag.AddValue("Trigger", $Trigger)
+$bag
+]]></ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>IPAddress</Name>
+                    <Value>$Config/IPAddress$</Value>
+                  </Parameter>
+                </Parameters>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="PSProbe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>System!System.PropertyBagData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+    </ModuleTypes>
+    <MonitorTypes>
+      <UnitMonitorType ID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type" Accessibility="Internal">
+        <MonitorTypeStates>
+          <MonitorTypeState ID="OK" NoDetection="false" />
+          <MonitorTypeState ID="NotOK" NoDetection="false" />
+        </MonitorTypeStates>
+        <Configuration>
+          <xsd:element minOccurs="1" name="Interval" type="xsd:integer" />
+          <xsd:element minOccurs="1" name="IPAddress" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="Interval" Selector="$Config/Interval$" ParameterType="string" />
+        </OverrideableParameters>
+        <MonitorImplementation>
+          <MemberModules>
+            <DataSource ID="DS" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.DataSource">
+              <Interval>$Config/Interval$</Interval>
+              <IPAddress>$Config/IPAddress$</IPAddress>
+            </DataSource>
+            <ConditionDetection ID="AVOK" TypeID="System!System.ExpressionFilter">
+              <Expression>
+                <SimpleExpression>
+                  <ValueExpression>
+                    <XPathQuery Type="String">Property[@Name='Trigger']</XPathQuery>
+                  </ValueExpression>
+                  <Operator>Equal</Operator>
+                  <ValueExpression>
+                    <Value Type="String">OFF</Value>
+                  </ValueExpression>
+                </SimpleExpression>
+              </Expression>
+            </ConditionDetection>
+            <ConditionDetection ID="AVNotOK" TypeID="System!System.ExpressionFilter">
+              <Expression>
+                <SimpleExpression>
+                  <ValueExpression>
+                    <XPathQuery Type="String">Property[@Name='Trigger']</XPathQuery>
+                  </ValueExpression>
+                  <Operator>Equal</Operator>
+                  <ValueExpression>
+                    <Value Type="String">ON</Value>
+                  </ValueExpression>
+                </SimpleExpression>
+              </Expression>
+            </ConditionDetection>
+          </MemberModules>
+          <RegularDetections>
+            <RegularDetection MonitorTypeStateID="OK">
+              <Node ID="AVOK">
+                <Node ID="DS" />
+              </Node>
+            </RegularDetection>
+            <RegularDetection MonitorTypeStateID="NotOK">
+              <Node ID="AVNotOK">
+                <Node ID="DS" />
+              </Node>
+            </RegularDetection>
+          </RegularDetections>
+        </MonitorImplementation>
+      </UnitMonitorType>
+    </MonitorTypes>
+  </TypeDefinitions>
+  <Monitoring>
+    <Discoveries>
+      <Discovery ID="ScaleArc.3.3.API.Cluster.Dynamic.Discovery" Enabled="true" Target="ScaleArc.3.3.API.License.Dynamic.Class" ConfirmDelivery="true" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.Clusters.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.Clusters.Dynamic.Class" PropertyID="Component_Name" />
+            <Property TypeID="ScaleArc.3.3.API.Clusters.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.Clusters.Dynamic.Class" PropertyID="ClusterID" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
+          <IntervalSeconds>600</IntervalSeconds>
+          <SyncTime>00:20</SyncTime>
+          <ScriptName>ScaleArc.3.3.API.Cluster.Dynamic.Discovery.Script.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($sourceId,$managedEntityId,$computerName,$IPAddress,$APIKey)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+$api = new-object -comObject 'MOM.ScriptAPI'
+$web = new-object net.webclient
+
+$apikeydycval  = [System.Convert]::FromBase64String($APIKey)
+$apikeydyc = [System.Text.Encoding]::UTF8.GetString($apikeydycval)
+$APIKey = $apikeydyc
+
+$INURL = "https://" + $IPAddress + "/api/clusters?apikey=" + $APIKey
+$INURLData = $web.DownloadString($INURL)
+$Jparse = $INURLData | ConvertFrom-Json
+
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+$CluIDs = $Jparse.Data.("cluster_id")
+
+foreach($CluID in $CluIDs)
+{
+$URL =  "https://" + $IPAddress + "/api/v1/clustercounters/?apikey=" + $APIKey + "&cid=" + $CluID
+
+$URLenc = [System.Text.Encoding]::UTF8.GetBytes($URL)
+$encurl = [System.Convert]::ToBase64String($URLenc)
+
+$UCluID = $IPAddress + ":" + $CluID
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.Clusters.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Clusters.Dynamic.Class']/Component_Name$", 'Cluster')
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Clusters.Dynamic.Class']/IPAddress$", $IPAddress)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Clusters.Dynamic.Class']/ClusterID$", $UCluID)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Clusters.Dynamic.Class']/URL$", $encurl)
+   $discoveryData.AddInstance($instance)
+$api.LogScriptEvent("ScaleArc.3.3.API.Cluster.Dynamic.Discovery.Script.ps1", 62, 0 , "ScaleArc.3.3.API.Cluster.Dynamic.Discovery.Script Completed Successfully: $urlencrpt.")
+}
+
+$discoveryData
+
+]]></ScriptBody>
+          <Parameters>
+            <Parameter>
+              <Name>sourceID</Name>
+              <Value>$MPElement$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>managedEntityID</Name>
+              <Value>$Target/Id$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>computerName</Name>
+              <Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>IPAddress</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/IPAddress$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>APIKey</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/APIKey$</Value>
+            </Parameter>
+          </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="ScaleArc.3.3.API.License.Dynamic.Discovery" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" ConfirmDelivery="true" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.License.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.License.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.License.Dynamic.Class" PropertyID="LicenseType" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" PropertyID="LicenseType" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
+          <IntervalSeconds>120</IntervalSeconds>
+          <SyncTime>00:30</SyncTime>
+          <ScriptName>ScaleArc.3.3.API.License.Dynamic.Discovery.Script.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($sourceId,$managedEntityId,$computerName,$SQLUser,$SQLPwd)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+Add-Type -AssemblyName System.Data
+$api = new-object -comObject 'MOM.ScriptAPI'
+					$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+					$SQLInstance = $DBServerPath.DatabaseServerName
+					$DB = "ScaleArcMon_Utility"
+					
+$connectionString = "Server=$SQLInstance;uid=" + $SQLUser + "; pwd=" + $SQLPwd + ";Database=$DB;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = “SELECT * FROM ScaleArc_Input”
+
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+
+$result = $command.ExecuteReader()
+$output = while ($result.Read()) { $result[0] + ":" + $result[1] + "`n"}
+#$output
+[string]$check = $output
+if($check -eq $null -or $check -eq "")
+{
+$api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.Discovery.Script.ps1", 4, 0 , "ScaleArc.3.3.API.License.Dynamic.Discovery.Script failed. Error: `n $error")
+$connection.Close()
+}
+else
+{
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+$web = new-object net.webclient
+foreach($entry in $output)
+{
+$URLData = ""
+$Jparse = ""
+$LicenseType = ""
+[string]$each = $entry
+$split = $each.Split(":")
+$ip = $split[0]
+$apikey = $split[1]
+
+$apikeydycval  = [System.Convert]::FromBase64String($apikey)
+$apikeydyc = [System.Text.Encoding]::UTF8.GetString($apikeydycval)
+$apikey = $apikeydyc
+
+
+$URL = "https://" + $ip + "/api/license?apikey=" + $apikey
+
+
+
+$URLData = $web.DownloadString($URL)
+$Jparse = $URLData | ConvertFrom-Json
+
+$apikeyenc = [System.Text.Encoding]::UTF8.GetBytes($apikey)
+$encapikey = [System.Convert]::ToBase64String($apikeyenc)
+
+$LicenseType =  $Jparse.data.("edition_type")
+
+if($LicenseType -ne "" -and $LicenseType -Match "Platinum")
+{
+
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/IPAddress$", $ip)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/APIKey$", $encapikey)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/LicenseType$", $LicenseType)
+   $discoveryData.AddInstance($instance)
+$api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.Discovery.Script.ps1", 63, 0 , "ScaleArc Server with IP: $ip is having $LicenseType License.")
+}
+else
+{
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/IPAddress$", $ip)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/APIKey$", $encapikey)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/LicenseType$", $LicenseType)
+   $discoveryData.AddInstance($instance)
+   $api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.Discovery.Script.ps1", 36, 0 , "ScaleArc Server with IP: $ip is having $LicenseType License.")
+}
+}
+}
+
+$connection.Close()
+$discoveryData
+
+]]></ScriptBody>
+          <Parameters>
+            <Parameter>
+              <Name>sourceID</Name>
+              <Value>$MPElement$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>managedEntityID</Name>
+              <Value>$Target/Id$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>computerName</Name>
+              <Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>SQLUser</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>SQLPwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account"]/Password$</Value>
+            </Parameter>
+          </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" ConfirmDelivery="true" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.License.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.License.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.License.Dynamic.Class" PropertyID="LicenseType" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" PropertyID="LicenseType" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
+          <IntervalSeconds>120</IntervalSeconds>
+          <SyncTime>00:10</SyncTime>
+          <ScriptName>ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($sourceId,$managedEntityId,$computerName,$User,$Pwd,$SQLUser,$SQLPwd)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+Add-Type -AssemblyName System.Data
+$api = new-object -comObject 'MOM.ScriptAPI'
+					$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+					$SQLInstance = $DBServerPath.DatabaseServerName
+					$DB = "ScaleArcMon_Utility"
+					
+$connectionString = "Server=$SQLInstance;uid=" + $SQLUser + "; pwd=" + $SQLPwd + ";Database=$DB;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = “SELECT * FROM ScaleArcScannedIPs”
+
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+
+$result = $command.ExecuteReader()
+$output = while ($result.Read()) { $result[0] + "`n"}
+#$output
+[string]$check = $output
+if($check -eq $null -or $check -eq "")
+{
+$api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script.ps1", 2, 0 , "ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script failed. Error: `n $error")
+$connection.Close()
+}
+else
+{
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+
+foreach($entry in $output)
+{
+$URLData = ""
+$Jparse = ""
+$LicenseType = ""
+[string]$ip = $entry
+$ip = $ip.trim()
+$web = new-object net.webclient
+$checkurl = "https://" + $ip
+$CheckURLData = $web.DownloadString($checkurl)
+if($CheckURLData -match "ScaleArc")
+{
+$cmd =  "Invoke-RestMethod " + '"' + "http://" + $ip + "/api/login" + '"' + " -Body " + "'" + '{"username":' + '"' + $User + '"' + ',"password":"' + $Pwd + '"}' + "'" + " -Method Post"
+$cmdexec = Invoke-Expression $cmd
+$apikey = $cmdexec.data.apikey
+
+if($apikey -eq $null -or $apikey -eq "")
+{
+$api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script.ps1", 8, 0 , "ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script failed.. No Valid APIKey generated for IP: $ip :: User:$User :: CMD: $cmdexec. Error: `n $error")
+$connection.Close()
+}
+else
+{
+$URL = "https://" + $ip + "/api/license?apikey=" + $apikey
+$URLData = $web.DownloadString($URL)
+$Jparse = $URLData | ConvertFrom-Json
+
+$apikeyenc = [System.Text.Encoding]::UTF8.GetBytes($apikey)
+$encapikey = [System.Convert]::ToBase64String($apikeyenc)
+
+$LicenseType =  $Jparse.data.("edition_type")
+
+if($LicenseType -ne "" -and $LicenseType -Match "Platinum")
+{
+
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']$")
+      $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/IPAddress$", $ip)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/LicenseType$", $LicenseType)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.License.Dynamic.Class']/APIKey$", $encapikey)
+   $discoveryData.AddInstance($instance)
+$api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script.ps1", 72, 0 , "ScaleArc Server with IP: $ip is having $LicenseType License.")
+}
+else
+{
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/IPAddress$", $ip)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/LicenseType$", $LicenseType)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.NotMonitored.Dynamic.Class']/APIKey$", $encapikey)
+   $discoveryData.AddInstance($instance)
+   $api.LogScriptEvent("ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery.Script.ps1", 27, 0 , "ScaleArc Server with IP: $ip is having $LicenseType License.")
+}
+}
+}
+}
+}
+
+$connection.Close()
+$discoveryData
+
+]]></ScriptBody>
+          <Parameters>
+            <Parameter>
+              <Name>sourceID</Name>
+              <Value>$MPElement$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>managedEntityID</Name>
+              <Value>$Target/Id$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>computerName</Name>
+              <Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.IPScan.API.Generate.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.IPScan.API.Generate.Account"]/Password$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>SQLUser</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>SQLPwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account"]/Password$</Value>
+            </Parameter>
+          </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="ScaleArc.3.3.API.ServerType.Dynamic.Discovery" Enabled="true" Target="ScaleArc.3.3.API.License.Dynamic.Class" ConfirmDelivery="true" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.ServerType.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.ServerType.Dynamic.Class" PropertyID="Component_Name" />
+            <Property TypeID="ScaleArc.3.3.API.ServerType.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="ScaleArc.3.3.API.ServerType.Dynamic.Class" PropertyID="RunningAs" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
+          <IntervalSeconds>120</IntervalSeconds>
+          <SyncTime>00:20</SyncTime>
+          <ScriptName>ScaleArc.3.3.API.ServerType.Dynamic.Discovery.Script.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($sourceId,$managedEntityId,$computerName,$IPAddress, $APIKey)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+$api = new-object -comObject 'MOM.ScriptAPI'
+$web = new-object net.webclient
+
+$apikeydycval  = [System.Convert]::FromBase64String($APIKey)
+$apikeydyc = [System.Text.Encoding]::UTF8.GetString($apikeydycval)
+$APIKey = $apikeydyc
+
+$URL = "https://" + $IPAddress + "/api/ha/status?apikey=" + $APIKey
+$URLData = $web.DownloadString($URL)
+$Jparse = $URLData | ConvertFrom-Json
+$HAStatus = $Jparse.data.("remote_runningas")
+
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+if($HAStatus -eq "Running as Standalone")
+{
+
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/IPAddress$", $IPAddress)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/Component_Name$", 'StandAlone')
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/RunningAs$", $HAStatus)
+   $discoveryData.AddInstance($instance)
+
+$api.LogScriptEvent("ScaleArc.3.3.API.ServerType.Dynamic.Discovery.Script.ps1", 53, 0 , "ScaleArc Server with IP: $IPAddress; $HAStatus.")
+}
+elseif($HAStatus -eq "Running as Primary")
+{
+
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/IPAddress$", $IPAddress)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/Component_Name$", 'HA')
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.ServerType.Dynamic.Class']/RunningAs$", $HAStatus)
+   $discoveryData.AddInstance($instance)
+
+$api.LogScriptEvent("ScaleArc.3.3.API.ServerType.Dynamic.Discovery.Script.ps1", 53, 0 , "ScaleArc Server with IP:$IPAddress; $HAStatus.")
+}
+
+$discoveryData
+
+]]></ScriptBody>
+          <Parameters>
+            <Parameter>
+              <Name>sourceID</Name>
+              <Value>$MPElement$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>managedEntityID</Name>
+              <Value>$Target/Id$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>computerName</Name>
+              <Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>IPAddress</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/IPAddress$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>APIKey</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/APIKey$</Value>
+            </Parameter>
+          </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </DataSource>
+      </Discovery>
+      <Discovery ID="ScaleArc.3.3.API.Systems.Dynamic.Discovery" Enabled="true" Target="ScaleArc.3.3.API.License.Dynamic.Class" ConfirmDelivery="true" Remotable="true" Priority="Normal">
+        <Category>Discovery</Category>
+        <DiscoveryTypes>
+          <DiscoveryClass TypeID="ScaleArc.3.3.API.Systems.Dynamic.Class">
+            <Property TypeID="ScaleArc.3.3.API.Systems.Dynamic.Class" PropertyID="Component_Name" />
+            <Property TypeID="ScaleArc.3.3.API.Systems.Dynamic.Class" PropertyID="IPAddress" />
+            <Property TypeID="System!System.Entity" PropertyID="DisplayName" />
+          </DiscoveryClass>
+        </DiscoveryTypes>
+        <DataSource ID="DS" TypeID="Windows!Microsoft.Windows.TimedPowerShell.DiscoveryProvider">
+          <IntervalSeconds>600</IntervalSeconds>
+          <SyncTime>00:45</SyncTime>
+          <ScriptName>ScaleArc.3.3.API.Systems.Dynamic.Discovery.Script.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($sourceId,$managedEntityId,$computerName,$IPAddress,$APIKey)
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+$api = new-object -comObject 'MOM.ScriptAPI'
+
+$apikeydycval  = [System.Convert]::FromBase64String($APIKey)
+$apikeydyc = [System.Text.Encoding]::UTF8.GetString($apikeydycval)
+$APIKey = $apikeydyc
+
+$URL = "https://" + $IPAddress + "/api/v1/systemcounters/?apikey=" + $APIKey
+
+$URLenc = [System.Text.Encoding]::UTF8.GetBytes($URL)
+$encurl = [System.Convert]::ToBase64String($URLenc)
+
+$discoveryData = $api.CreateDiscoveryData(0, $SourceId, $ManagedEntityId)
+   $instance = $discoveryData.CreateClassInstance("$MPElement[Name='ScaleArc.3.3.API.Systems.Dynamic.Class']$")
+   $instance.AddProperty("$MPElement[Name='Windows!Microsoft.Windows.Computer']/PrincipalName$", $computerName)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Systems.Dynamic.Class']/Component_Name$", 'System')
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Systems.Dynamic.Class']/IPAddress$", $IPAddress)
+   $instance.AddProperty("$MPElement[Name='ScaleArc.3.3.API.Systems.Dynamic.Class']/URL$", $encurl)
+   $discoveryData.AddInstance($instance)
+$api.LogScriptEvent("ScaleArc.3.3.API.Systems.Dynamic.Discovery.Script.ps1", 44, 0 , "ScaleArc.3.3.API.Systems.Dynamic.Discovery.Script Completed Successfully: $URL. ")
+
+$discoveryData
+
+]]></ScriptBody>
+          <Parameters>
+            <Parameter>
+              <Name>sourceID</Name>
+              <Value>$MPElement$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>managedEntityID</Name>
+              <Value>$Target/Id$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>computerName</Name>
+              <Value>$Target/Host/Property[Type="Windows!Microsoft.Windows.Computer"]/PrincipalName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>IPAddress</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/IPAddress$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>APIKey</Name>
+              <Value>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/APIKey$</Value>
+            </Parameter>
+          </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </DataSource>
+      </Discovery>
+    </Discoveries>
+    <Monitors>
+      <UnitMonitor ID="ScaleArc.3.3.API.Discovery.Clusters.Availability" Accessibility="Internal" Enabled="true" Target="ScaleArc.3.3.API.Clusters.Dynamic.Class" ParentMonitorID="Health!System.Health.EntityState" Remotable="true" Priority="Normal" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type" ConfirmDelivery="true">
+        <Category>Custom</Category>
+        <OperationalStates>
+          <OperationalState ID="UIGeneratedOpStateId118fcf5f16ec4d539d02af2c833b73b0" MonitorTypeStateID="OK" HealthState="Success" />
+          <OperationalState ID="UIGeneratedOpStateId71a8225606564dcc935cf47c3cff3315" MonitorTypeStateID="NotOK" HealthState="Error" />
+        </OperationalStates>
+        <Configuration>
+          <Interval>10</Interval>
+          <IPAddress>$Target/Property[Type="ScaleArc.3.3.API.Clusters.Dynamic.Class"]/IPAddress$</IPAddress>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="ScaleArc.3.3.API.Discovery.License.Availability" Accessibility="Internal" Enabled="true" Target="ScaleArc.3.3.API.License.Dynamic.Class" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type" ConfirmDelivery="true">
+        <Category>Custom</Category>
+        <OperationalStates>
+          <OperationalState ID="UIGeneratedOpStateId11d69ca364f24b9ea364c536dcdfb6ee" MonitorTypeStateID="OK" HealthState="Success" />
+          <OperationalState ID="UIGeneratedOpStateId27eb49b817de4177820994c3f886af39" MonitorTypeStateID="NotOK" HealthState="Error" />
+        </OperationalStates>
+        <Configuration>
+          <Interval>10</Interval>
+          <IPAddress>$Target/Property[Type="ScaleArc.3.3.API.License.Dynamic.Class"]/IPAddress$</IPAddress>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="ScaleArc.3.3.API.Discovery.ServerType.Availability" Accessibility="Internal" Enabled="true" Target="ScaleArc.3.3.API.ServerType.Dynamic.Class" ParentMonitorID="Health!System.Health.EntityState" Remotable="true" Priority="Normal" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type" ConfirmDelivery="true">
+        <Category>Custom</Category>
+        <OperationalStates>
+          <OperationalState ID="UIGeneratedOpStateId8e6cc35cb62146509ca0edd974cf7ec0" MonitorTypeStateID="OK" HealthState="Success" />
+          <OperationalState ID="UIGeneratedOpStateId72c2e2cc861c42c28347b3deba4c78c4" MonitorTypeStateID="NotOK" HealthState="Error" />
+        </OperationalStates>
+        <Configuration>
+          <Interval>10</Interval>
+          <IPAddress>$Target/Property[Type="ScaleArc.3.3.API.ServerType.Dynamic.Class"]/IPAddress$</IPAddress>
+        </Configuration>
+      </UnitMonitor>
+      <UnitMonitor ID="ScaleArc.3.3.API.Discovery.Systems.Availability" Accessibility="Internal" Enabled="true" Target="ScaleArc.3.3.API.Systems.Dynamic.Class" ParentMonitorID="Health!System.Health.AvailabilityState" Remotable="true" Priority="Normal" TypeID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type" ConfirmDelivery="true">
+        <Category>Custom</Category>
+        <OperationalStates>
+          <OperationalState ID="UIGeneratedOpStateIdcd30bdf6cc1e4d5eba419cd08a2fbf58" MonitorTypeStateID="OK" HealthState="Success" />
+          <OperationalState ID="UIGeneratedOpStateId9d8d3991e48f4c298889d4028699a6bf" MonitorTypeStateID="NotOK" HealthState="Error" />
+        </OperationalStates>
+        <Configuration>
+          <Interval>10</Interval>
+          <IPAddress>$Target/Property[Type="ScaleArc.3.3.API.Systems.Dynamic.Class"]/IPAddress$</IPAddress>
+        </Configuration>
+      </UnitMonitor>
+    </Monitors>
+  </Monitoring>
+  <LanguagePacks>
+    <LanguagePack ID="ENU" IsDefault="true">
+      <DisplayStrings>
+        <DisplayString ElementID="ScaleArc.3.3.API.Cluster.Dynamic.Discovery">
+          <Name>ScaleArc 3.3 API Cluster Dynamic Discovery</Name>
+          <Description>ScaleArc 3.3 API Cluster Dynamic Discovery</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Clusters.Dynamic.Class">
+          <Name>ScaleArc 3.3 API Clusters Dynamic Class</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Clusters.Dynamic.Class" SubElementID="ClusterID">
+          <Name>ClusterID</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Clusters.Dynamic.Class" SubElementID="Component_Name">
+          <Name>Component Name</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Clusters.Dynamic.Class" SubElementID="IPAddress">
+          <Name>IPAddress</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery">
+          <Name>ScaleArc 3.3 API (Discovery)</Name>
+          <Description>This managementpack contains the ScaleArc 3.3 API parameters discovery configurations.</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Clusters.Availability">
+          <Name>Cluster Availability</Name>
+          <Description>Cluster Availability</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Clusters.Availability" SubElementID="UIGeneratedOpStateId118fcf5f16ec4d539d02af2c833b73b0">
+          <Name>OK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Clusters.Availability" SubElementID="UIGeneratedOpStateId71a8225606564dcc935cf47c3cff3315">
+          <Name>NotOK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.IPScan.API.Generate.Account">
+          <Name>ScaleArc API Generate Account</Name>
+          <Description>ScaleArc API Generate Account</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.License.Availability">
+          <Name>License Availability</Name>
+          <Description>License Availability</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.License.Availability" SubElementID="UIGeneratedOpStateId11d69ca364f24b9ea364c536dcdfb6ee">
+          <Name>OK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.License.Availability" SubElementID="UIGeneratedOpStateId27eb49b817de4177820994c3f886af39">
+          <Name>NotOK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Server.Availability.DataSource">
+          <Name>Availability DataSource</Name>
+          <Description>Availability.DataSource</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Server.Availability.Monitor.Type">
+          <Name>Server Availability Monitor Type</Name>
+          <Description>Server Availability Monitor Type</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Server.Availability.Probe">
+          <Name>Server Availability Probe</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.ServerType.Availability">
+          <Name>ServerType Availability</Name>
+          <Description>ServerType Availability</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.ServerType.Availability" SubElementID="UIGeneratedOpStateId72c2e2cc861c42c28347b3deba4c78c4">
+          <Name>NotOK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.ServerType.Availability" SubElementID="UIGeneratedOpStateId8e6cc35cb62146509ca0edd974cf7ec0">
+          <Name>OK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Systems.Availability">
+          <Name>Systems Availability</Name>
+          <Description />
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Systems.Availability" SubElementID="UIGeneratedOpStateId9d8d3991e48f4c298889d4028699a6bf">
+          <Name>NotOK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.Systems.Availability" SubElementID="UIGeneratedOpStateIdcd30bdf6cc1e4d5eba419cd08a2fbf58">
+          <Name>OK</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Discovery.Account">
+          <Name>ScaleArcMon Utility DB Connect Discovery Account</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.Class">
+          <Name>ScaleArc 3.3 API License Dynamic Class</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.Class" SubElementID="IPAddress">
+          <Name>IPAddress</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.Class" SubElementID="LicenseType">
+          <Name>LicenseType</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.Class" SubElementID="URL">
+          <Name>URL</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.Discovery">
+          <Name>ScaleArc 3.3 API License Dynamic Discovery</Name>
+          <Description>ScaleArc 3.3 API License Dynamic Discovery</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.License.Dynamic.IPScan.Discovery">
+          <Name>ScaleArc 3.3 API License Dynamic IPScan Discovery</Name>
+          <Description>ScaleArc 3.3 API License Dynamic IPScan Discovery</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class">
+          <Name>ScaleArc 3.3 API NotMonitored Dynamic Class</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" SubElementID="IPAddress">
+          <Name>IPAddress</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" SubElementID="LicenseType">
+          <Name>LicenseType</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.NotMonitored.Dynamic.Class" SubElementID="URL">
+          <Name>URL</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Class">
+          <Name>ScaleArc 3.3 API ServerType Dynamic Class</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Class" SubElementID="Component_Name">
+          <Name>Component_Name</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Class" SubElementID="IPAddress">
+          <Name>IPAddress</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Class" SubElementID="RunningAs">
+          <Name>RunningAs</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Class" SubElementID="URL">
+          <Name>URL</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.ServerType.Dynamic.Discovery">
+          <Name>ScaleArc 3.3 API ServerType Dynamic Discovery</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Systems.Dynamic.Class">
+          <Name>ScaleArc 3.3 API Systems Dynamic Class</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Systems.Dynamic.Class" SubElementID="Component_Name">
+          <Name>Component Name</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Systems.Dynamic.Class" SubElementID="IPAddress">
+          <Name>IPAddress</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Systems.Dynamic.Class" SubElementID="URL">
+          <Name>URL</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Systems.Dynamic.Discovery">
+          <Name>ScaleArc 3.3 API Systems Dynamic Discovery</Name>
+          <Description>ScaleArc 3.3 API Systems Dynamic Discovery</Description>
+        </DisplayString>
+      </DisplayStrings>
+    </LanguagePack>
+  </LanguagePacks>
+</ManagementPack>

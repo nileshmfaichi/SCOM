@@ -1,0 +1,682 @@
+<ManagementPack ContentReadable="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity>
+      <ID>ScaleArc.3.3.API.Monitoring.Tasks</ID>
+      <Version>1.0.0.8</Version>
+    </Identity>
+    <Name>ScaleArc.3.3.API.Monitoring.Tasks</Name>
+    <References>
+      <Reference Alias="SC">
+        <ID>Microsoft.SystemCenter.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Windows">
+        <ID>Microsoft.Windows.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="ScaleArc3.3APIDiscovery">
+        <ID>ScaleArc.3.3.API.Discovery</ID>
+        <Version>1.0.0.3</Version>
+        <PublicKeyToken>a99393ba969d9cca</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Health">
+        <ID>System.Health.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="System">
+        <ID>System.Library</ID>
+        <Version>6.1.7221.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <SecureReferences>
+      <SecureReference ID="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account" Accessibility="Public" Context="SC!Microsoft.SystemCenter.ManagementServer" />
+    </SecureReferences>
+    <ModuleTypes>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Monitoring.Tasks.AddComponentDetails.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="Details" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="Details" Selector="$Config/Details$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+                <ScriptName>AddComponentDetails.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+param($Details,$User,$Pwd)
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$DB = "ScaleArcMon_Utility"
+
+$connectionString = "Server=$SQLInstance;uid=" + $User + "; pwd=" + $Pwd + ";Database=$DB;"
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+$splitdata = $Details.Split(",")
+foreach($data in $splitdata)
+{
+$each = $data.split(":")
+$ip = $each[0]
+$APIKey = $each[1]
+$apikeyenc = [System.Text.Encoding]::UTF8.GetBytes($APIKey)
+$encapikey = [System.Convert]::ToBase64String($apikeyenc)
+$api = $encapikey
+
+$connection.Open()
+$query = "SELECT * FROM ScaleArc_Input Where IPAddress= '$ip' AND APIKey= '$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+
+if($output -match $ip)
+{
+write-host "`n`n $ip and $api already found in the database. Duplicate Entry! No action taken `n`n"
+}
+else
+{
+
+$connection.Open()
+$query = "INSERT INTO ScaleArc_Input (IPAddress,APIKey) VALUES ('$ip','$api')"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+$connection.Open()
+$query = "SELECT * FROM ScaleArc_Input Where IPAddress= '$ip' AND APIKey= '$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+if($output -match $ip)
+{
+write-host "`n`n $ip and $api have been inserted into the database. `n`n"
+}
+else
+{
+write-host "`n`n Please re-run the Task Something went wrong! . `n`n"
+}
+}
+}
+]]></ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>Details</Name>
+                    <Value>$Config/Details$</Value>
+                  </Parameter>
+				              <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/Password$</Value>
+            </Parameter>
+                </Parameters>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>Windows!Microsoft.Windows.SerializedObjectData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Monitoring.Tasks.AddSingleComponentDetails.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="IPAddress" type="xsd:string" />
+          <xsd:element minOccurs="1" name="APIKey" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IPAddress" Selector="$Config/IPAddress$" ParameterType="string" />
+          <OverrideableParameter ID="APIKey" Selector="$Config/APIKey$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+                <ScriptName>AddComponentDetails.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+param($IPAddress,$APIKey,$User,$Pwd)
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$DB = "ScaleArcMon_Utility"
+
+$connectionString = "Server=$SQLInstance;uid=" + $User + "; pwd=" + $Pwd + ";Database=$DB;"
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$ip = $IPAddress
+$apikeyenc = [System.Text.Encoding]::UTF8.GetBytes($apikey)
+$encapikey = [System.Convert]::ToBase64String($apikeyenc)
+$APIKey = $encapikey
+
+$api = $APIKey
+$connection.Open()
+$query = "SELECT * FROM ScaleArc_Input Where IPAddress= '$ip' AND APIKey= '$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+
+if($output -match $ip)
+{
+write-host "`n`n $ip and $api already found in the database. Duplicate Entry! No action taken `n`n"
+}
+else
+{
+
+$connection.Open()
+$query = "INSERT INTO ScaleArc_Input (IPAddress,APIKey) VALUES ('$ip','$api')"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+$connection.Open()
+$query = "SELECT * FROM ScaleArc_Input Where IPAddress= '$ip' AND APIKey= '$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+if($output -match $ip)
+{
+write-host "`n`n $ip and $api have been inserted into the database. `n`n"
+}
+else
+{
+write-host "`n`n Please re-run the Task Something went wrong! . `n`n"
+}
+}
+]]></ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>IPAddress</Name>
+                    <Value>$Config/IPAddress$</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>APIKey</Name>
+                    <Value>$Config/APIKey$</Value>
+                  </Parameter>
+				              <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/Password$</Value>
+            </Parameter>
+                </Parameters>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>Windows!Microsoft.Windows.SerializedObjectData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Monitoring.Tasks.IPScan.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="IPRangeStart" type="xsd:string" />
+          <xsd:element minOccurs="1" name="IPRangeEnd" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="IPRangeStart" Selector="$Config/IPRangeStart$" ParameterType="string" />
+          <OverrideableParameter ID="IPRangeEnd" Selector="$Config/IPRangeEnd$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+                <ScriptName>ScaleArc_IPScan.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+param([string]$IPRangeStart,[string]$IPRangeEnd,$User,$Pwd)
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$DB = "ScaleArcMon_Utility"
+$web = new-object System.net.WebClient
+
+$connectionString = "Server=$SQLInstance;uid=" + $User + "; pwd=" + $Pwd + ";Database=$DB;"
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+#Work with IP
+$IPRangeStartSplit = $IPRangeStart.Split(".")
+$IPRangeEndSplit = $IPRangeEnd.Split(".")
+$SemiSubnet = $IPRangeStartSplit[0] + "." + $IPRangeStartSplit[1] + "." + $IPRangeStartSplit[2] + "."
+[int]$Rstart = $IPRangeStartSplit[3]
+[int]$Rend = $IPRangeEndSplit[3]
+for($ip = $Rstart; $ip -le $Rend; $ip++)
+{
+$pIP = $SemiSubnet + $ip
+
+$URL = "http://" + $pIP
+[string]$Validate = ""
+$Validate = $web.DownloadString($URL)
+#$Validate
+if($Validate -eq $null -or $Validate -eq "")
+{
+Write-host "IP $pIP is not a Valid ScaleArc Machine. URL NOT Working: $URL  `n`n"
+}
+else
+{
+Write-host "IP $pIP a Valid ScaleArc Machine. URL Working: $URL. `n"
+$connection.Open()
+$query = "SELECT * FROM ScaleArcScannedIPs Where IPAddress= '$pIP'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){$result[0]}
+$connection.Close()
+
+if($output -match $pIP)
+{
+write-host "`n`n $pIP already found in the database. Duplicate Entry! No action taken `n`n"
+}
+else
+{
+
+Write-host "IP $pIP is being updated to DB. `n`n"
+$connection.Open()
+$query = "INSERT INTO ScaleArcScannedIPs (IPAddress) VALUES ('$pIP')"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+}
+}
+}
+]]></ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>IPRangeStart</Name>
+                    <Value>$Config/IPRangeStart$</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>IPRangeEnd</Name>
+                    <Value>$Config/IPRangeEnd$</Value>
+                  </Parameter>
+				              <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/Password$</Value>
+            </Parameter>
+                </Parameters>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>Windows!Microsoft.Windows.SerializedObjectData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Monitoring.Tasks.MonitoringPrepTask.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration />
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+                <ScriptName>MonitoringPrepTask.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+Import-Module sqlps -DisableNameChecking
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$SQLDBName = "ScaleArcMon_Utility"
+
+$server = New-Object Microsoft.SqlServer.Management.Smo.Server("$SQLInstance")
+#$server.Databases
+[string]$check = $server.databases["$SQLDBName"]
+$check = $check.Replace("[","")
+$check = $check.Replace("]","")
+if($check -eq $SQLDBName)
+{
+Write-Host "DB Exists OR DB Create Permission issue. `n $error `n"
+}
+else
+{
+Write-Host "Creating the DB..."
+$connectionString = "Server=$SQLInstance;Database=master;Integrated Security=SSPI;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = "CREATE DATABASE [$SQLDBName]"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+Write-Host "Creating the ...ScaleArc_Input"
+$connectionString = "Server=$SQLInstance;Database=master;Integrated Security=SSPI;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = "USE $SQLDBName CREATE TABLE [dbo].[ScaleArc_Input]([IPAddress] [varchar](max) NULL,[APIKey] [varchar](max) NULL)"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+
+Write-Host "Creating the ...ScaleArcScannedIPs"
+$connectionString = "Server=$SQLInstance;Database=master;Integrated Security=SSPI;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = "USE $SQLDBName CREATE TABLE [dbo].[ScaleArcScannedIPs]([IPAddress] [varchar](max) NULL)"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+
+Write-Host "Creating the ...Account..."
+$connectionString = "Server=$SQLInstance;Database=master;Integrated Security=SSPI;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = @"
+IF NOT EXISTS(SELECT name FROM sys.server_principals WHERE name = 'scalearcmon')
+BEGIN
+CREATE LOGIN scalearcmon WITH PASSWORD = 'scalearcmon',CHECK_POLICY = OFF
+END
+"@
+
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+Write-Host "Now ...SettingUp accounts Permission..."
+$connectionString = "Server=$SQLInstance;Database=master;Integrated Security=SSPI;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = @"
+USE $SQLDBName
+CREATE USER scalearcmon FROM LOGIN scalearcmon;
+exec sp_addrolemember 'db_owner', 'scalearcmon';
+"@
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+
+$server = New-Object Microsoft.SqlServer.Management.Smo.Server("$SQLInstance")
+[string]$check = $server.databases["$SQLDBName"]
+if($check -match $SQLDBName)
+{
+Write-Host "$SQLDBName DB has been Created successfully!"
+}
+else
+{
+Write-Host "DB did not get Created. PLease check the Runas Account Permission!"
+}
+}
+
+]]></ScriptBody>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>Windows!Microsoft.Windows.SerializedObjectData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+      <ProbeActionModuleType ID="ScaleArc.3.3.API.Monitoring.Tasks.RemoveComponentDetails.Probe" Accessibility="Internal" Batching="false" PassThrough="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="Details" type="xsd:string" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="Details" Selector="$Config/Details$" ParameterType="string" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+                <ScriptName>RemoveComponentDetails.ps1</ScriptName>
+                <ScriptBody><![CDATA[
+param($Details,$User,$Pwd)
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$DB = "ScaleArcMon_Utility"
+
+$connectionString = "Server=$SQLInstance;uid=" + $User + "; pwd=" + $Pwd + ";Database=$DB;"
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+$splitdata = $Details.Split(",")
+foreach($data in $splitdata)
+{
+$each = $data.split(":")
+$ip = $each[0]
+$APIKey = $each[1]
+$apikeyenc = [System.Text.Encoding]::UTF8.GetBytes($APIKey)
+$encapikey = [System.Convert]::ToBase64String($apikeyenc)
+$api = $encapikey
+
+$connection.Open()
+$query = "SELECT * FROM ScaleArc_Input Where IPAddress= '$ip' AND APIKey= '$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+
+if($output -match $ip)
+{
+write-host "`n`n $ip and $api found in the database. Proceeding to remove the Entry! `n`n"
+
+$connection.Open()
+$query = "DELETE FROM ScaleArc_Input WHERE IPAddress='$ip' AND APIKey='$api'"
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+$result = $command.ExecuteReader()
+$connection.Close()
+}
+
+else
+{
+write-host "`n`n $ip and $api were not found in the database. No action taken! `n`n [Note: If you find any error below, try re-running the task again!] `n`n"
+}
+}
+]]></ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>Details</Name>
+                    <Value>$Config/Details$</Value>
+                  </Parameter>
+				              <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/Password$</Value>
+            </Parameter>
+                </Parameters>
+                <TimeoutSeconds>180</TimeoutSeconds>
+              </ProbeAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="Probe" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <OutputType>Windows!Microsoft.Windows.SerializedObjectData</OutputType>
+        <TriggerOnly>true</TriggerOnly>
+      </ProbeActionModuleType>
+    </ModuleTypes>
+  </TypeDefinitions>
+  <Monitoring>
+    <Tasks>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.AddComponentDetails.Task" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="TaskProbe" TypeID="ScaleArc.3.3.API.Monitoring.Tasks.AddComponentDetails.Probe">
+          <Details />
+        </ProbeAction>
+      </Task>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.AddSingleComponentDetails.Task" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="TaskProbe" TypeID="ScaleArc.3.3.API.Monitoring.Tasks.AddSingleComponentDetails.Probe">
+          <IPAddress>Click Override to Provide IP</IPAddress>
+          <APIKey>Click Override to Provide IPKey</APIKey>
+        </ProbeAction>
+      </Task>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.GetComponentDetails" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="Probe" TypeID="Windows!Microsoft.Windows.PowerShellTriggerOnlyProbe">
+          <ScriptName>GetComponentDetails.ps1</ScriptName>
+          <ScriptBody><![CDATA[
+param($User,$Pwd)
+Add-Type -AssemblyName System.Data
+$DBServerPath = Get-ItemProperty "HKLM:SOFTWARE\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$SQLInstance = $DBServerPath.DatabaseServerName
+$DB = "ScaleArcMon_Utility"
+
+$connectionString = "Server=$SQLInstance;uid=scalearcmon; pwd=scalearcmon;Database=$DB;"
+
+$connection = New-Object System.Data.SqlClient.SqlConnection
+$connection.ConnectionString = $connectionString
+
+$connection.Open()
+$query = "SELECT IPAddress FROM ScaleArc_Input"
+
+$command = $connection.CreateCommand()
+$command.CommandText = $query
+
+$result = $command.ExecuteReader()
+
+$output = while ($result.Read()){"`t`t" +  $result[0] + "`t`t" + $result[1] + "`n"}
+$connection.Close()
+$result = $output | ft -autosize
+$result
+]]></ScriptBody>
+<Parameters>
+			              <Parameter>
+              <Name>User</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/UserName$</Value>
+            </Parameter>
+            <Parameter>
+              <Name>Pwd</Name>
+              <Value>$RunAs[Name="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account"]/Password$</Value>
+            </Parameter>
+                </Parameters>
+          <TimeoutSeconds>180</TimeoutSeconds>
+        </ProbeAction>
+      </Task>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.IPScan.Task" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="TaskProbe" TypeID="ScaleArc.3.3.API.Monitoring.Tasks.IPScan.Probe">
+          <IPRangeStart />
+          <IPRangeEnd />
+        </ProbeAction>
+      </Task>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.MonitoringPrep.Task" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="TaskProbe" TypeID="ScaleArc.3.3.API.Monitoring.Tasks.MonitoringPrepTask.Probe" />
+      </Task>
+      <Task ID="ScaleArc.3.3.API.Monitoring.Tasks.RemoveComponentDetails.Task" Accessibility="Internal" Enabled="true" Target="SC!Microsoft.SystemCenter.ManagementServer" Timeout="300" Remotable="true">
+        <Category>Custom</Category>
+        <ProbeAction ID="TaskProbe" TypeID="ScaleArc.3.3.API.Monitoring.Tasks.RemoveComponentDetails.Probe">
+          <Details />
+        </ProbeAction>
+      </Task>
+    </Tasks>
+  </Monitoring>
+  <LanguagePacks>
+    <LanguagePack ID="ENU" IsDefault="true">
+      <DisplayStrings>
+        <DisplayString ElementID="ScaleArc.3.3.API.Discovery.UtilityDB.Connect.Tasks.Account">
+          <Name>ScaleArcMon Utility DB Connect Tasks Account</Name>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks">
+          <Name>ScaleArc 3.3 API (Monitoring Tasks)</Name>
+          <Description>ManagementPack contains automated tasks for ScaleArc 3.3 API Monitoring</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.AddComponentDetails.Probe">
+          <Name>AddComponentDetails Probe</Name>
+          <Description>AddComponentDetails Probe</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.AddComponentDetails.Task">
+          <Name>ScaleArc Add Component Details Task (Bulk Entry)</Name>
+          <Description>ScaleArc Add Component Details Task</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.AddSingleComponentDetails.Probe">
+          <Name>AddSingleComponentDetails Probe</Name>
+          <Description>AddSingleComponentDetails Probe</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.AddSingleComponentDetails.Task">
+          <Name>ScaleArc Add Component Details Task (Single Entry)</Name>
+          <Description>ScaleArc Add Single Component Details Task</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.GetComponentDetails">
+          <Name>ScaleArc Get Component Details</Name>
+          <Description>ScaleArc Get Component Details</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.IPScan.Probe">
+          <Name>IPScan Probe</Name>
+          <Description>IPScan Probe</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.IPScan.Task">
+          <Name>ScaleArc IPScan Task</Name>
+          <Description>ScaleArc IPScan Task</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.MonitoringPrep.Task">
+          <Name>ScaleArc Monitoring Prep Task</Name>
+          <Description>ScaleArc Monitoring Prep Task</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.MonitoringPrepTask.Probe">
+          <Name>MonitoringPrepTask Probe</Name>
+          <Description>MonitoringPrepTask Probe</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.RemoveComponentDetails.Probe">
+          <Name>RemoveComponentDetails Probe</Name>
+          <Description>RemoveComponentDetails Probe</Description>
+        </DisplayString>
+        <DisplayString ElementID="ScaleArc.3.3.API.Monitoring.Tasks.RemoveComponentDetails.Task">
+          <Name>ScaleArc Remove Component Details Task</Name>
+          <Description>ScaleArc Remove Component Details Task</Description>
+        </DisplayString>
+      </DisplayStrings>
+    </LanguagePack>
+  </LanguagePacks>
+</ManagementPack>
